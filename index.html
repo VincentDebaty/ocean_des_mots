@@ -826,7 +826,7 @@ const Store = {
       if (snap.empty && snap.metadata.fromCache) return;
       this.words = snap.docs.map(d => ({ id: d.id, ...clone(d.data()) }));
       this.L('words', this.words); this.wordsLoaded = true; onData('words');
-    }, e => { console.warn('words', e); this.wordsLoaded = true; onData(); });
+    }, e => { console.warn('words', e); this.wordsLoaded = true; onData(); toast("Impossible de joindre la liste de mots. Vérifie la connexion."); });
     db.doc('progress/main').onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites) return;
       if (snap.exists) { this.progress = fixProgress(clone(snap.data())); this.L('progress', this.progress); }
@@ -875,8 +875,8 @@ const Store = {
 };
 async function firebaseDb(code) {
   if (!firebase.apps.length) firebase.initializeApp(window.ODM_FIREBASE);
+  // No Firestore disk cache: it can stall at launch in iOS home screen apps. The game keeps its own copy of the words on the device.
   const fs = firebase.firestore();
-  try { await fs.enablePersistence({ synchronizeTabs: true }); } catch (e) { /* offline cache unavailable: still works online */ }
   const root = fs.collection('familles').doc(code);
   const ref = p => p.split('/').reduce((r, seg, i) => i % 2 === 0 ? r.collection(seg) : r.doc(seg), root);
   return { collection: ref, doc: ref };
