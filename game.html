@@ -434,6 +434,22 @@ mark.fix{background:#c9f2d9;color:var(--kelp-d)}
 .status-line i{width:10px;height:10px;border-radius:50%;background:var(--kelp)}
 .status-line i.local{background:var(--sun-d)}
 
+/* tablets: use the width (iPad landscape and portrait) */
+.home-top{display:flex;flex-direction:column;gap:16px}
+@media (min-width:900px){
+  .wrap{max-width:1040px}
+  .home-top{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:stretch}
+  .tabbar{grid-template-columns:repeat(4,minmax(0,170px));justify-content:center;column-gap:28px}
+  .kb-row{max-width:860px}
+  .key{max-width:74px;font-size:24px}
+  .key.back{max-width:96px}
+}
+@media (min-width:900px) and (orientation:landscape){
+  .castle-scene{max-width:min(600px,58vh)}
+  .conch{width:112px;height:112px}
+  .conch svg{width:78px;height:78px}
+  .beacon{min-height:150px}
+}
 @media (prefers-reduced-motion:reduce){
   .rays,.rise,.waveline,.turtle-big svg,.record-banner{animation:none}
   *{scroll-behavior:auto}
@@ -1543,14 +1559,16 @@ function renderHome() {
       <span class="x2">${dailyDone ? '✓' : '×2'}</span></button>
     <h2 class="sec">Les jeux</h2>
     <div class="games">${GAME_IDS.map(id => { const g = GAMES[id], s = peekStat(id); return `<button type="button" class="game-card t-${id}" data-game="${id}"><span class="gc-icon">${ICONS[id]}</span><span class="gc-name">${g.name}</span><span class="gc-sub">${g.sub}</span><span class="gc-rec">${s.best ? `Record <b>${s.best}</b>` : 'Pas encore joué'}</span><span class="gc-medals">${medalsMini(s.medals)}</span></button>`; }).join('')}</div>`;
+  const cut = body.indexOf('<h2 class="sec">Les jeux</h2>');
+  const daily = cut > 0 ? body.slice(0, cut) : '', rest = cut > 0 ? body.slice(cut) : body;
   screenEl.innerHTML = `<div class="wrap">
-    <button type="button" class="hero" data-go="turtle">
+    <div class="home-top"><button type="button" class="hero" data-go="turtle">
       <span class="hero-turtle">${turtleSVG(st, P.pearls)}</span>
       <span class="hero-txt"><h1>${greet()}</h1><span class="tn">${esc(P.turtleName || 'Ta tortue')} · ${STAGES[st]}</span>
       <span class="bar"><i style="width:${pct}%"></i></span>
       <span class="small">${nx ? `Encore ${nx - P.pearls} perles pour grandir` : 'Ta tortue est légendaire !'}</span></span>
-    </button>
-    ${body}
+    </button>${daily}</div>
+    ${rest}
   </div>`;
   maybeAskName();
 }
