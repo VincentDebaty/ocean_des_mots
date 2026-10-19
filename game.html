@@ -805,10 +805,13 @@ const Store = {
     } catch (e) { return null; }
   },
   async init() {
+    try {
+      const f = cleanFamily(new URLSearchParams(location.search).get('famille'));
+      if (f.length >= 12 && f !== this.L('family')) { ['words', 'progress', 'settings'].forEach(k => this.L(k, null)); this.L('family', f); }
+    } catch (e) { }
     const w = this.L('words'); if (Array.isArray(w)) this.words = w;
     const p = this.L('progress'); if (p) this.progress = fixProgress(p);
     const s = this.L('settings'); if (s) this.settings = { ...this.settings, ...s };
-    try { const f = cleanFamily(new URLSearchParams(location.search).get('famille')); if (f.length >= 12 && f !== this.L('family')) this.L('family', f); } catch (e) { }
     let db = null;
     try { db = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('db') : null; } catch (e) { db = null; }
     if (!db && window.ODM_FIREBASE && window.firebase) {
@@ -826,10 +829,14 @@ const Store = {
     }, e => { console.warn('words', e); this.wordsLoaded = true; onData(); toast("Impossible de joindre la liste de mots. Vérifie la connexion."); });
     db.doc('progress/main').onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites) return;
+      // An empty answer from the local cache is not "no progress yet": wait for the server before deciding anything
+      if (!snap.exists && snap.metadata.fromCache) return;
+      const first = !this.progressLoaded;
+      this.progressLoaded = true;
       if (snap.exists) { this.progress = fixProgress(clone(snap.data())); this.L('progress', this.progress); }
-      else if (this.progress.pearls > 0) this.saveProgress();
-      this.progressLoaded = true; onData('progress');
-    }, e => { console.warn('progress', e); this.progressLoaded = true; onData(); });
+      else if (first && this.progress.pearls > 0) this.saveProgress();
+      onData('progress');
+    }, e => { console.warn('progress', e); toast("Impossible de charger la progression. Vérifie la connexion."); });
     db.doc('settings/main').onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites) return;
       if (snap.exists) { this.settings = { pin: '', off: [], ...clone(snap.data()) }; this.L('settings', this.settings); onData('settings'); }
@@ -851,7 +858,11 @@ const Store = {
       q.busy = false;
     })();
   },
-  saveProgress() { this.L('progress', this.progress); if (this.db) this.write('progress/main', clone(this.progress)); },
+  saveProgress() {
+    this.L('progress', this.progress);
+    // Never send progress to the shared store before the stored one has been read: it would replace it
+    if (this.db && this.progressLoaded) this.write('progress/main', clone(this.progress));
+  },
   saveSettings() { this.L('settings', this.settings); if (this.db) this.write('settings/main', clone(this.settings)); },
   cleanWord(d) { return { text: norm(d.text), sentence: String(d.sentence || '').replace(/\s+/g, ' ').trim().replace(/[’]/g, "'"), list: String(d.list || 'Ma liste').trim() || 'Ma liste' }; },
   async addWord(d) {
@@ -889,10 +900,12 @@ function askFamily() {
   $('#famForm').onsubmit = e => {
     e.preventDefault(); const c = cleanFamily($('#famCode').value);
     if (c.length < 12) { shake($('#famCode')); toast('Le code famille a 12 caractères.'); return; }
+    if (c !== Store.L('family')) ['words', 'progress', 'settings'].forEach(k => Store.L(k, null));
     Store.L('family', c); location.reload();
   };
   $('#famNew').onclick = () => {
     const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = new Uint32Array(12); crypto.getRandomValues(r);
+    ['words', 'progress', 'settings'].forEach(k => Store.L(k, null));
     Store.L('family', Array.from(r, x => abc[x % abc.length]).join('')); location.reload();
   };
 }
