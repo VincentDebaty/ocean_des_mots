@@ -1,5 +1,5 @@
 // Offline support: the game shell comes from the network when possible (to get updates), from the cache otherwise.
-const CACHE = 'odm-v9';
+const CACHE = 'odm-v10';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icons/icon-192.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
