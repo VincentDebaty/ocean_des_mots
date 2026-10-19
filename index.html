@@ -904,6 +904,8 @@ async function firebaseDb(code) {
   if (!firebase.apps.length) firebase.initializeApp(window.ODM_FIREBASE);
   // No Firestore disk cache: it can stall at launch in iOS home screen apps. The game keeps its own copy of the words on the device.
   const fs = firebase.firestore();
+  // Safari often waits ~20 s before falling back from streaming: use long polling straight away
+  try { fs.settings({ experimentalForceLongPolling: true, merge: true }); } catch (e) { }
   const root = fs.collection('familles').doc(code);
   const ref = p => p.split('/').reduce((r, seg, i) => i % 2 === 0 ? r.collection(seg) : r.doc(seg), root);
   return { collection: ref, doc: ref };
