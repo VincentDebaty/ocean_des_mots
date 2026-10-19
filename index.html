@@ -1046,7 +1046,7 @@ const DAILY_GAMES = ['conque', 'chateau', 'coquillages', 'phare', 'bouteille'];
 const GAMES = {
   conque: { name: 'La Conque', sub: 'Dictée', max: 2, eligible: () => true, round: roundConque,
     rules: "Écoute le mot dans la conque, avec sa petite phrase, puis écris-le sans faute. Du premier coup : 2 perles. Sinon, choisis la bonne orthographe parmi 3 : 1 perle." },
-  chateau: { name: 'Le Château de sable', sub: 'Pendu', max: 3, eligible: w => letterCount(w.text) >= 4, round: roundChateau,
+  chateau: { name: 'Le Château de sable', sub: 'Pendu', max: 3, rounds: 5, eligible: w => letterCount(w.text) >= 4, round: roundChateau,
     rules: "Trouve les lettres du mot avant que la marée n'emporte ton château ! Chaque erreur fait monter l'eau. Attention : é, è, à… sont des touches à part." },
   coquillages: { name: 'Les Coquillages', sub: 'Anagramme', max: 2, eligible: w => letterCount(w.text) >= 4, round: roundCoquillages,
     rules: "Les lettres du mot sont mélangées sur la plage. La première lettre est déjà à sa place : touche les autres coquillages dans le bon ordre. Sans aide et du premier coup : 2 perles." },
@@ -1309,7 +1309,7 @@ let S = null;
 function startSession(gameId, daily = false) {
   const pool = activeWords().filter(w => daily ? DAILY_GAMES.some(g => GAMES[g].eligible(w)) : GAMES[gameId].eligible(w));
   if (!pool.length) { toast("Il n'y a pas encore de mot pour ce jeu."); return; }
-  const words = pickWords(pool, Math.min(10, pool.length));
+  const words = pickWords(pool, Math.min(daily ? 10 : (GAMES[gameId].rounds || 10), pool.length));
   const rounds = words.map(w => ({ w, g: daily ? pick(DAILY_GAMES.filter(g => GAMES[g].eligible(w))) : gameId }));
   S = { id: daily ? 'daily' : gameId, daily, rounds, i: 0, score: 0, max: rounds.reduce((a, r) => a + GAMES[r.g].max, 0), res: [], token: {} };
   go('game');
